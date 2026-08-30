@@ -1,0 +1,6 @@
+{
+  "name": "Raja Rani & Stopwatch Arcade",
+  "description": "Small Paper Game: Real-time multiplayer paper slip & arcade collection featuring Stopwatch Precision Duel (Target Timer with Bot, Friends, Online Random in Single & Team modes), Kingdom Court (King & Thief chits), BULLS & COWS, and CRICKET CARD BATTLE.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
