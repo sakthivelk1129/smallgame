@@ -12,8 +12,6 @@ import {
   User, 
   X,
   Lock,
-  Eye,
-  EyeOff,
   Search,
   MessageSquareQuote,
   Flame,
@@ -58,7 +56,6 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
   const [showAbilityModal, setShowAbilityModal] = useState(false);
   const [abilityTarget1, setAbilityTarget1] = useState<string>('');
   const [abilityTarget2, setAbilityTarget2] = useState<string>('');
-  const [isRolePeeking, setIsRolePeeking] = useState(false);
   const [customAlibiText, setCustomAlibiText] = useState('');
   const [showCustomAlibiInput, setShowCustomAlibiInput] = useState(false);
   const [speakingPlayers, setSpeakingPlayers] = useState<Map<string, number>>(new Map());
@@ -433,36 +430,24 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
         </div>
       )}
 
-      {/* Bottom Command Area with Secret Privacy Shield */}
+      {/* Bottom Command Area */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           
-          {/* Left info box with Anti-Peeping Privacy Curtain */}
+          {/* Left info box: Direct Role Identity Display */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
             
-            {/* Masked Secret Identity Chit */}
-            <div 
-              onClick={() => {
-                sound.playClick();
-                setIsRolePeeking(!isRolePeeking);
-              }}
-              className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-amber-500/40 transition-all select-none"
-              title="Click to peek or hide your role"
-            >
-              <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-lg shrink-0">
-                {isRolePeeking ? (myRoleDefinition ? myRoleDefinition.emoji : '👤') : '🔒'}
+            {/* Direct Role Badge */}
+            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-slate-950 border border-slate-800 shadow-inner select-none">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-500/30 flex items-center justify-center text-xl shrink-0">
+                {myRoleDefinition ? myRoleDefinition.emoji : '👤'}
               </div>
               <div className="text-left pr-1">
-                <div className="text-[10px] text-slate-400 flex items-center gap-1 font-semibold">
-                  <span>Secret Chit</span>
-                  {isRolePeeking ? <EyeOff className="w-3 h-3 text-amber-400" /> : <Eye className="w-3 h-3 text-slate-400" />}
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                  Your Role ({myRoleDefinition?.points ?? 0} pts)
                 </div>
-                <div className="text-xs font-bold text-slate-100">
-                  {isRolePeeking ? (
-                    <span className="text-amber-400">{myRoleDefinition?.name || 'Subject'}</span>
-                  ) : (
-                    <span className="text-slate-400">•••• (Tap to peek)</span>
-                  )}
+                <div className="text-sm font-black text-amber-300 flex items-center gap-1.5">
+                  <span>{myRoleDefinition?.name || (myRole ? myRole : 'Courtier')}</span>
                 </div>
               </div>
             </div>

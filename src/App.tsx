@@ -458,6 +458,7 @@ export default function App() {
   const handleStartGame = () => {
     if (!socketRef.current) return;
     socketRef.current.emit('room:startGame');
+    socketRef.current.emit('game:start');
   };
 
   const handleAcknowledgeRole = () => {
@@ -467,17 +468,29 @@ export default function App() {
 
   const handleAccuse = (accusedPlayerId: string) => {
     if (!socketRef.current) return;
-    socketRef.current.emit('police:accuse', { accusedPlayerId });
+    socketRef.current.emit('police:accuse', { 
+      accusedPlayerId,
+      targetPlayerId: accusedPlayerId 
+    });
   };
 
-  const handleUseAbility = (targetPlayerId?: string) => {
+  const handleUseAbility = (params: { abilityType?: string; targetPlayerId?: string; secondTargetPlayerId?: string } | string) => {
     if (!socketRef.current) return;
-    socketRef.current.emit('ability:use', { targetPlayerId });
+    if (typeof params === 'string') {
+      socketRef.current.emit('ability:use', { abilityType: params, targetPlayerId: params });
+    } else {
+      socketRef.current.emit('ability:use', params);
+    }
   };
 
-  const handleClaimAlibi = (claimType: 'innocent' | 'claim_role' | 'counter_accuse' | 'bribe_plea', customText?: string, targetPlayerId?: string) => {
+  const handleClaimAlibi = (claimText: string, claimedRole?: string) => {
     if (!socketRef.current) return;
-    socketRef.current.emit('court:claimAlibi', { claimType, customText, targetPlayerId });
+    socketRef.current.emit('court:claimAlibi', { 
+      claimText, 
+      claimedRole,
+      customText: claimText,
+      claimType: claimedRole || 'innocent' 
+    });
   };
 
   const handleInspectSuspect = (targetPlayerId: string) => {
@@ -710,8 +723,10 @@ export default function App() {
             {/* ROLE REVEAL PHASE (Secret Card Open) */}
             {gameState.phase === 'ROLE_REVEAL' && (
               <RoleRevealView
-                role={mySecretRole}
-                roleDefinition={myRoleDefinition}
+                round={gameState.currentRound}
+                maxRounds={gameState.maxRounds}
+                role={mySecretRole || 'FARMER'}
+                definition={myRoleDefinition || ROLE_DEFINITIONS[mySecretRole || 'FARMER']}
                 mode={gameState.mode}
                 timer={gameState.timer}
                 onAcknowledge={handleAcknowledgeRole}
@@ -721,19 +736,20 @@ export default function App() {
             {/* RAJA REVEAL PHASE */}
             {gameState.phase === 'RAJA_REVEAL' && (
               <RajaRevealView
-                gameState={gameState}
-                currentUserId={currentSocketId}
+                rajaPlayer={gameState.players.find(p => p.id === gameState.rajaPlayerId)}
+                round={gameState.currentRound}
+                maxRounds={gameState.maxRounds}
                 timer={gameState.timer}
               />
             )}
 
             {/* INTERROGATION / BLUFFING GAMEPLAY PHASE */}
-            {(gameState.phase === 'POLICE_INTERROGATION' || gameState.phase === 'DISCUSSION') && (
+            {(gameState.phase === 'POLICE_TURN' || gameState.phase === 'POLICE_INTERROGATION' || gameState.phase === 'DISCUSSION') && (
               <GameplayView
                 gameState={gameState}
                 currentUserId={currentSocketId}
                 myRole={mySecretRole}
-                myRoleDefinition={myRoleDefinition}
+                myRoleDefinition={myRoleDefinition || (mySecretRole ? ROLE_DEFINITIONS[mySecretRole] : undefined)}
                 alibiClaims={alibiClaims}
                 inspectedSuspectId={inspectedSuspectId}
                 onAccuse={handleAccuse}

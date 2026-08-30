@@ -1115,14 +1115,15 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
-  // Host Starts Game
-  socket.on('room:startGame', () => {
+  // Host Starts Game (Support both game:start and room:startGame)
+  const handleHostStartGame = () => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room || room.state.hostId !== socket.id) return;
 
-    if (room.state.players.length < 4) {
-      socket.emit('room:error', { message: 'Need at least 4 players (or add bots) to start!' });
+    const minReq = room.state.settings.minPlayers || 4;
+    if (room.state.players.length < minReq) {
+      socket.emit('room:error', { message: `Need at least ${minReq} players (or add bots) to start!` });
       return;
     }
 
@@ -1133,13 +1134,17 @@ io.on('connection', (socket: Socket) => {
     }
 
     startGame(currentRoomId);
-  });
+  };
 
-  // Police Accusation Action
-  socket.on('police:accuse', ({ targetPlayerId }: { targetPlayerId: string }) => {
-    if (!currentRoomId) return;
+  socket.on('game:start', handleHostStartGame);
+  socket.on('room:startGame', handleHostStartGame);
+
+  // Police Accusation Action (Support both targetPlayerId and accusedPlayerId)
+  socket.on('police:accuse', ({ targetPlayerId, accusedPlayerId }: { targetPlayerId?: string; accusedPlayerId?: string }) => {
+    const chosenTargetId = targetPlayerId || accusedPlayerId;
+    if (!currentRoomId || !chosenTargetId) return;
     const room = rooms.get(currentRoomId);
-    if (!room || room.state.phase !== 'POLICE_TURN') return;
+    if (!room || (room.state.phase !== 'POLICE_TURN' && room.state.phase !== 'DISCUSSION')) return;
 
     // Verify socket is indeed the Police
     const callerRole = room.privateRoles.get(socket.id);
@@ -1150,13 +1155,13 @@ io.on('connection', (socket: Socket) => {
 
     // Kings choice constraint if active
     if (room.state.activeEvent?.type === 'KINGS_CHOICE' && room.state.kingsChoicePlayerIds && room.state.kingsChoicePlayerIds.length > 0) {
-      if (!room.state.kingsChoicePlayerIds.includes(targetPlayerId)) {
+      if (!room.state.kingsChoicePlayerIds.includes(chosenTargetId)) {
         socket.emit('room:error', { message: 'King’s Choice is active! You must accuse one of the 3 decreed suspects.' });
         return;
       }
     }
 
-    processAccusation(currentRoomId, socket.id, targetPlayerId);
+    processAccusation(currentRoomId, socket.id, chosenTargetId);
   });
 
   // Special Abilities Action (Special Mode)
@@ -1280,7 +1285,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // Alibi & Defense Proclamation Shout
-  socket.on('court:claimAlibi', ({ claimText, claimedRole }: { claimText: string; claimedRole?: string }) => {
+  socket.on('court:claimAlibi', ({ claimText, customText, claimType, claimedRole }: { claimText?: string; customText?: string; claimType?: string; claimedRole?: string }) => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room || (room.state.phase !== 'POLICE_TURN' && room.state.phase !== 'DISCUSSION')) return;
@@ -1288,13 +1293,14 @@ io.on('connection', (socket: Socket) => {
     const sender = room.state.players.find(p => p.id === socket.id);
     if (!sender) return;
 
+    const rawText = claimText || customText || claimType || 'I am innocent!';
     const alibiEvt = {
       id: `alibi-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       playerId: sender.id,
       playerName: sender.name,
       avatar: sender.avatar,
-      claimedRole: claimedRole || 'Innocent',
-      claimText: (claimText || '').trim().substring(0, 140),
+      claimedRole: claimedRole || (claimType && claimType !== 'innocent' ? claimType : 'Innocent'),
+      claimText: rawText.trim().substring(0, 140),
       timestamp: Date.now()
     };
 
