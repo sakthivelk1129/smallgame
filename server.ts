@@ -1116,7 +1116,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // Host Starts Game
-  socket.on('game:start', () => {
+  socket.on('room:startGame', () => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room || room.state.hostId !== socket.id) return;
